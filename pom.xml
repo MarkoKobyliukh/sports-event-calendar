@@ -56,6 +56,12 @@
             <artifactId>flyway-core</artifactId>
         </dependency>
 
+        <!-- Bean Validation (@NotNull, @NotBlank, @Size, etc.) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
