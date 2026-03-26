@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Dashboard')}"></head>
+<body class="bg-slate-950 text-white min-h-screen">
+
+<nav th:replace="~{fragments/nav :: nav}"></nav>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-white">Live Scoreboard</h1>
+        <p class="text-slate-400 mt-1">Real-time sports event tracker</p>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
+            <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Total Events</p>
+            <p class="text-3xl font-bold text-white mt-1" th:text="${totalCount}">0</p>
+        </div>
+        <div class="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+            <p class="text-red-400 text-xs font-medium uppercase tracking-wider">Live Now</p>
+            <p class="text-3xl font-bold text-red-400 mt-1" th:text="${liveCount}">0</p>
+        </div>
+        <div class="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+            <p class="text-blue-400 text-xs font-medium uppercase tracking-wider">Scheduled</p>
+            <p class="text-3xl font-bold text-blue-400 mt-1" th:text="${scheduledCount}">0</p>
+        </div>
+        <div class="bg-slate-700/30 border border-slate-600/30 rounded-xl p-4">
+            <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Finished</p>
+            <p class="text-3xl font-bold text-slate-400 mt-1" th:text="${finishedCount}">0</p>
+        </div>
+    </div>
+
+    <!-- Events Grid -->
+    <div th:if="${events.isEmpty()}" class="text-center py-20 text-slate-500">
+        <p class="text-xl">No events found.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div th:each="event : ${events}"
+             class="bg-slate-800/60 border border-slate-700/40 rounded-2xl p-5 hover:border-indigo-500/40 hover:bg-slate-800/80 transition-all group">
+
+            <!-- Top row: sport + status -->
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-xs font-semibold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-full"
+                      th:text="${event.sportName}">Sport</span>
+
+                <!-- LIVE badge -->
+                <span th:if="${event.status.name() == 'LIVE'}"
+                      class="flex items-center gap-1.5 text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-full">
+                    <span class="w-1.5 h-1.5 bg-red-400 rounded-full live-pulse"></span>LIVE
+                </span>
+                <!-- SCHEDULED badge -->
+                <span th:if="${event.status.name() == 'SCHEDULED'}"
+                      class="text-xs font-semibold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">
+                    SCHEDULED
+                </span>
+                <!-- FINISHED badge -->
+                <span th:if="${event.status.name() == 'FINISHED'}"
+                      class="text-xs font-semibold text-slate-400 bg-slate-600/30 border border-slate-600/30 px-2.5 py-1 rounded-full">
+                    FINISHED
+                </span>
+            </div>
+
+            <!-- Teams & Score -->
+            <div class="flex items-center justify-between gap-2 my-4">
+                <!-- Home Team -->
+                <div th:with="homeTeams=${event.teams.?[home == true]}" class="flex-1 text-left">
+                    <p class="font-bold text-white text-sm leading-tight"
+                       th:text="${homeTeams.isEmpty() ? 'TBD' : homeTeams[0].teamName}">Home</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Home</p>
+                </div>
+
+                <!-- Score -->
+                <div class="flex items-center gap-2 px-3">
+                    <span th:with="homeTeams=${event.teams.?[home == true]}"
+                          class="text-3xl font-black text-white w-8 text-center"
+                          th:text="${homeTeams.isEmpty() ? '-' : (homeTeams[0].score != null ? homeTeams[0].score : '-')}">-</span>
+                    <span class="text-slate-600 font-bold text-lg">:</span>
+                    <span th:with="awayTeams=${event.teams.?[home == false]}"
+                          class="text-3xl font-black text-white w-8 text-center"
+                          th:text="${awayTeams.isEmpty() ? '-' : (awayTeams[0].score != null ? awayTeams[0].score : '-')}">-</span>
+                </div>
+
+                <!-- Away Team -->
+                <div th:with="awayTeams=${event.teams.?[home == false]}" class="flex-1 text-right">
+                    <p class="font-bold text-white text-sm leading-tight"
+                       th:text="${awayTeams.isEmpty() ? 'TBD' : awayTeams[0].teamName}">Away</p>
+                    <p class="text-xs text-slate-500 mt-0.5">Away</p>
+                </div>
+            </div>
+
+            <!-- Divider -->
+            <div class="border-t border-slate-700/50 pt-3 mt-3 flex items-center justify-between">
+                <div class="flex items-center gap-3 text-xs text-slate-500">
+                    <span th:text="${#temporals.format(event.eventDate, 'dd MMM yyyy')}">Date</span>
+                    <span>·</span>
+                    <span th:text="${#temporals.format(event.eventTime, 'HH:mm')}">Time</span>
+                </div>
+                <a th:href="@{/events/{id}(id=${event.id})}"
+                   class="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+                    Details →
+                </a>
+            </div>
+        </div>
+    </div>
+</main>
+
+</body>
+</html>

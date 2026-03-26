@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Sports')}"></head>
+<body class="bg-slate-950 text-white min-h-screen">
+
+<nav th:replace="~{fragments/nav :: nav}"></nav>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-white">Sports</h1>
+        <p class="text-slate-400 mt-1">All sports available on the platform</p>
+    </div>
+
+    <div th:if="${sports.isEmpty()}" class="text-center py-20 text-slate-500">
+        <p class="text-xl">No sports found.</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div th:each="sport : ${sports}"
+             class="bg-slate-800/60 border border-slate-700/40 rounded-2xl p-6 hover:border-indigo-500/40 hover:bg-slate-800/80 transition-all group">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 bg-indigo-600/20 border border-indigo-500/30 rounded-xl flex items-center justify-center group-hover:bg-indigo-600/30 transition-colors">
+                    <span class="text-2xl font-black text-indigo-400"
+                          th:text="${sport.name.substring(0, 1).toUpperCase()}">S</span>
+                </div>
+                <div>
+                    <p class="text-xl font-bold text-white" th:text="${sport.name}">Sport Name</p>
+                    <a th:href="@{/teams(sportId=${sport.id})}"
+                       class="text-xs text-indigo-400 hover:text-indigo-300 transition-colors mt-0.5 inline-block">
+                        View teams →
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Teams')}"></head>
+<body class="bg-slate-950 text-white min-h-screen">
+
+<nav th:replace="~{fragments/nav :: nav}"></nav>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-white">Teams</h1>
+        <p class="text-slate-400 mt-1">Browse all registered teams</p>
+    </div>
+
+    <!-- Sport Filter -->
+    <form method="get" action="/teams" class="flex flex-wrap gap-2 mb-6">
+        <a href="/teams"
+           th:classappend="${selectedSportId == null ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}"
+           class="px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-slate-700">
+            All Sports
+        </a>
+        <a th:each="sport : ${sports}"
+           th:href="@{/teams(sportId=${sport.id})}"
+           th:text="${sport.name}"
+           th:classappend="${sport.id == selectedSportId ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border-slate-700'}"
+           class="px-4 py-2 rounded-lg text-sm font-medium transition-colors border">
+        </a>
+    </form>
+
+    <!-- Count -->
+    <p class="text-slate-500 text-sm mb-4">
+        <span class="text-white font-medium" th:text="${teams.size()}">0</span> teams
+    </p>
+
+    <!-- Teams Grid -->
+    <div th:if="${teams.isEmpty()}" class="text-center py-20 text-slate-500">
+        <p class="text-xl">No teams found.</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div th:each="team : ${teams}"
+             class="bg-slate-800/60 border border-slate-700/40 rounded-xl p-5 hover:border-indigo-500/40 transition-all">
+            <!-- Initials Avatar -->
+            <div class="w-12 h-12 bg-indigo-600/20 border border-indigo-500/30 rounded-xl flex items-center justify-center mb-3">
+                <span class="text-indigo-400 font-bold text-lg"
+                      th:text="${team.name.substring(0, 1).toUpperCase()}">T</span>
+            </div>
+            <p class="font-bold text-white text-base" th:text="${team.name}">Team Name</p>
+            <p class="text-sm text-indigo-400 mt-1" th:text="${team.sportName}">Sport</p>
+            <p class="text-xs text-slate-500 mt-1" th:text="${team.cityName}">City</p>
+        </div>
+    </div>
+
+</main>
+</body>
+</html>
