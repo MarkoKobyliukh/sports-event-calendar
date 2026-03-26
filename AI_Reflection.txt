@@ -1,0 +1,188 @@
+AI Reflection — Sports Event Calendar
+Sportradar Coding Academy Back-End Exercise
+Author: Marko Kobyliukh
+========================================
+
+This document describes how I used AI assistance (Claude) throughout the development
+of this project — how I prompted it, validated its output, ran and tested the
+application, and used AI as a learning and debugging tool.
+
+
+1. HOW I STRUCTURED MY PROMPTS
+--------------------------------
+I did not use AI as a code generator I blindly copied from. I treated it as a
+senior engineer I was pair-programming with, where I stayed in control of what
+got built and what got committed.
+
+My prompting approach:
+
+- Long context upfront, short follow-ups. At the start of the project I gave a
+  full brief: the exercise requirements PDF, the tech stack I wanted (Java 21,
+  Spring Boot 3.x, PostgreSQL, Flyway, Thymeleaf, Tailwind, JUnit 5 + Mockito),
+  my naming conventions, the rule that all optional requirements are mandatory,
+  and my project folder path. After that I used short commands like "go", "next",
+  "commit" to move between stages — the AI maintained the full context.
+
+- Stage-by-stage development. I explicitly broke the project into labelled stages
+  (Stage 1: DB schema + migrations, Stage 2: entities + repositories + services + 
+  REST controllers + exception handling,Stage 3: Thymeleaf frontend, Stage 4: tests, 
+  Stage 5: frontend CRUD forms and date range filtering). I asked for each stage 
+  separately, reviewed the output, ran it, and only moved forward after confirming it worked.
+
+- Strict scope instructions. I told the AI upfront: do not touch code I did not
+  ask you to touch. This prevented it from refactoring things I had already
+  validated, which would have created unpredictable regressions.
+
+- I pasted exact error output. When the application failed, I copied the full
+  stack trace or screenshot into the prompt. I never paraphrased errors — raw
+  output gave the AI enough signal to diagnose the root cause accurately.
+
+
+2. HOW I VALIDATED THE CODE
+-----------------------------
+I did not assume the generated code was correct. Every stage went through a
+validation loop before I approved it.
+
+Application startup validation:
+- After each stage I ran the Spring Boot application from IntelliJ and checked
+  the console output. I looked for specific signals: "Started SportEventsApplication",
+  "HikariPool-1 - Start completed", the number of JPA repositories detected
+  (54 when all were wired correctly), and "No Flyway migration issues detected".
+  If any of these were missing or replaced by stack traces, I reported the exact
+  output back to the AI.
+
+Browser validation:
+- For the REST API I opened endpoints directly in the browser (e.g.
+  http://localhost:8080/api/sports) and verified the JSON response matched the
+  expected DTO shape. Seeing real JSON like [{"id":1,"name":"Football"},...] on
+  screen confirmed the full stack — controller, service, repository, and DB — was
+  wired correctly end to end. Also, I used Postman for CRUD methods validation.
+- For the Thymeleaf frontend I manually clicked through every page: dashboard,
+  event list with filters, create event form, event detail, status update, score
+  update, and delete. I verified each action produced the correct result and that
+  flash messages appeared after form submissions.
+
+pgAdmin 4 validation:
+- Before running the application I used pgAdmin 4 to verify the database state.
+  I checked that Flyway migrations applied correctly by inspecting the
+  flyway_schema_history table. I also queried the event, event_team, sport,
+  venue, and team tables directly to confirm seed data was present and that FK
+  relationships were intact. This let me catch schema issues (like the CHAR vs
+  VARCHAR mismatch that caused Hibernate validation to crash) at the database
+  level before debugging through logs.
+
+
+3. HOW I RAN AND INTERPRETED TESTS
+------------------------------------
+I ran the full test suite via IntelliJ's test runner (right-click → Run All Tests)
+and via Maven (mvn test). I tracked the pass/fail count at the summary line.
+
+When 6 of 54 tests failed, I did not just paste the failure count — I expanded
+the failed test, copied the full stack trace, and sent it to the AI. The root
+cause was that @DataJpaTest uses an H2 in-memory database, but the application's
+application.properties had spring.jpa.hibernate.ddl-auto=validate, so Hibernate
+tried to validate against an empty schema and crashed. The fix was adding
+@TestPropertySource annotations to the repository test class to override both
+the ddl-auto setting and disable Flyway for the test context.
+
+After applying the fix, all 54 tests passed. The remaining ByteBuddy warnings in
+the output were benign (Java 21 compatibility notices from the Mockito/ByteBuddy
+library) and did not indicate test failures.
+
+
+4. HOW I MADE SURE THE AI UNDERSTOOD AND IMPROVED CODE
+--------------------------------------------------------
+When AI output did not behave as expected, I described the exact symptom — not
+just "it doesn't work":
+
+- "After creating an event with the title 'Athletic vs Shakhtar' I see TBD vs TBD
+  on the dashboard and detail page."
+  This gave the AI a precise failure mode. It diagnosed that the form was not
+  sending team IDs to the controller, which meant no EventTeam records were being
+  created. The fix involved three coordinated changes: the form HTML, the
+  controller method signature, and the service call sequence.
+
+- When I wanted features beyond the initial scope (score updates, date-range
+  filtering, per-sport filtering) I described the requirement in plain language
+  and let the AI propose the implementation. I then reviewed the proposed changes
+  file by file before accepting them.
+
+- I also challenged AI decisions directly. For example, I asked why manual mappers
+  were chosen over MapStruct, why Java records were used for DTOs instead of
+  regular classes, and why @Transactional(readOnly=true) was set at the class
+  level rather than per-method. The AI explained each decision. If the reasoning
+  made sense, I kept it. This turned code review into a learning moment.
+
+
+5. HOW I USED AI TO LEARN THROUGH THE PROJECT
+-----------------------------------------------
+My learning style is to read working code and understand it, rather than follow
+abstract tutorials. AI fits this perfectly.
+
+- Every generated file came with a bullet-point breakdown of what changed and why.
+  I read these explanations after verifying the code worked. This let me connect
+  the behavior I saw in the running application to the specific patterns in the code.
+
+- I learned practical Spring Boot patterns this way: the PRG (Post-Redirect-Get)
+  pattern for Thymeleaf form submissions, the @Transactional(readOnly=true) class-
+  level annotation pattern, SpEL collection filtering in Thymeleaf templates
+  (th:text="${event.eventTeams.?[home == true][0].team.name}"), and how
+  @WebMvcTest isolates only the web layer while mocking the service.
+
+- Database design was collaborative. I had already done the 3NF design and ERD
+  for Task 1. Using AI to translate that design into Flyway migrations made me
+  compare my schema decisions against the SQL output — and catch real issues, like
+  the CHAR(3) vs VARCHAR(3) problem that only surfaced during Hibernate schema
+  validation.
+
+
+6. HOW I USED AI TO SOLVE SPECIFIC CODING CHALLENGES
+------------------------------------------------------
+Several problems in this project were non-trivial. AI was most useful when I gave
+it full diagnostic information.
+
+Challenge: Flyway + H2 in tests
+  Symptom: Schema-validation error on missing tables in @DataJpaTest.
+  Approach: Pasted the full stack trace. AI identified the conflict between
+  ddl-auto=validate (from application.properties) and the empty H2 schema
+  (no Flyway in test context). Solution: @TestPropertySource override.
+
+Challenge: CHAR vs VARCHAR schema mismatch
+  Symptom: Hibernate crash on startup with "wrong column type encountered".
+  Approach: Pasted the error. AI identified that PostgreSQL stores CHAR(n) as
+  bpchar type internally, which Hibernate does not map to varchar. Fixed by
+  changing the migration SQL and dropping the columnDefinition override on the
+  entity. Required dropping and recreating the database to clear Flyway history.
+
+Challenge: TBD teams after event creation
+  Symptom: Event showed correct title but both team slots showed "TBD".
+  Approach: Described the symptom precisely. AI traced the data flow: form →
+  controller → service → DB. The form had no team fields, so no EventTeam rows
+  were inserted. Fixed end-to-end: form HTML added dropdowns, controller added
+  homeTeamId/awayTeamId parameters, service addTeam() called after event creation.
+
+Challenge: IntelliJ "file outside module source root"
+  Symptom: Java files showing red, application not runnable from IDE.
+  Approach: Described what I saw. AI walked me through File → Project Structure →
+  Modules → marking source roots manually, then Invalidate Caches → Restart.
+
+
+7. SUMMARY
+-----------
+Throughout this project AI served three roles:
+
+1. Implementation partner — generating full, working files based on my specifications
+   and constraints, so I could focus on design decisions and validation rather than
+   boilerplate.
+
+2. Debugging assistant — diagnosing errors from raw stack traces faster than
+   searching documentation would allow, always with an explanation of the root cause
+   so I could understand what went wrong, not just apply a fix.
+
+3. Learning accelerator — explaining the "why" behind every pattern it used, turning
+   a project build into a structured learning experience in Spring Boot, JPA,
+   Flyway, and testing strategy.
+
+The key discipline I maintained: I never committed code I had not run and verified
+myself. AI wrote the code. I validated every line's behavior in a real running
+system before it became part of the project history.
