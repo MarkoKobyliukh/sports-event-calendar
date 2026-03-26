@@ -12,6 +12,16 @@
         ← Back to Events
     </a>
 
+    <!-- Flash messages -->
+    <div th:if="${successMessage}"
+         class="mb-4 flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl px-4 py-3 text-sm">
+        <span>✓</span><span th:text="${successMessage}">Success</span>
+    </div>
+    <div th:if="${errorMessage}"
+         class="mb-4 flex items-center gap-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl px-4 py-3 text-sm">
+        <span>⚠</span><span th:text="${errorMessage}">Error</span>
+    </div>
+
     <div th:if="${event != null}">
         <!-- Status + Sport -->
         <div class="flex items-center gap-3 mb-4">
@@ -84,7 +94,7 @@
         </div>
 
         <!-- Teams Table -->
-        <div th:if="${!event.teams.isEmpty()}" class="bg-slate-800/40 border border-slate-700/30 rounded-xl overflow-hidden">
+        <div th:if="${!event.teams.isEmpty()}" class="bg-slate-800/40 border border-slate-700/30 rounded-xl overflow-hidden mb-6">
             <div class="px-4 py-3 border-b border-slate-700/30">
                 <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">Participating Teams</h2>
             </div>
@@ -113,9 +123,63 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Manage Event -->
+        <div class="bg-slate-800/40 border border-slate-700/30 rounded-2xl p-6 space-y-6">
+            <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider">Manage Event</h2>
+
+            <!-- Update Status -->
+            <div>
+                <p class="text-xs text-slate-500 uppercase tracking-wider mb-2">Update Status</p>
+                <form th:action="@{/events/{id}/status(id=${event.id})}" method="post" class="flex gap-2">
+                    <select name="status"
+                            class="flex-1 bg-slate-900 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <option th:each="s : ${statuses}"
+                                th:value="${s.name()}"
+                                th:text="${s.name()}"
+                                th:selected="${s == event.status}">Status</option>
+                    </select>
+                    <button type="submit"
+                            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors">
+                        Update
+                    </button>
+                </form>
+            </div>
+
+            <!-- Update Scores -->
+            <div th:if="${!event.teams.isEmpty()}">
+                <p class="text-xs text-slate-500 uppercase tracking-wider mb-2">Update Scores</p>
+                <div class="space-y-2">
+                    <div th:each="team : ${event.teams}" class="flex items-center gap-3">
+                        <span class="flex-1 text-sm font-medium text-white" th:text="${team.teamName}">Team</span>
+                        <form th:action="@{/events/{id}/teams/{teamId}/score(id=${event.id},teamId=${team.teamId})}"
+                              method="post" class="flex gap-2 items-center">
+                            <input type="number" name="score" min="0" required
+                                   th:value="${team.score != null ? team.score : 0}"
+                                   class="w-20 bg-slate-900 border border-slate-600 text-white text-center rounded-lg px-2 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"/>
+                            <button type="submit"
+                                    class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-medium rounded-lg transition-colors">
+                                Set
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delete Event -->
+            <div class="pt-2 border-t border-slate-700/40">
+                <p class="text-xs text-slate-500 uppercase tracking-wider mb-2">Danger Zone</p>
+                <form th:action="@{/events/{id}/delete(id=${event.id})}" method="post"
+                      onsubmit="return confirm('Delete this event? This cannot be undone.')">
+                    <button type="submit"
+                            class="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-500/20 text-sm font-medium rounded-lg transition-colors">
+                        Delete Event
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
 
 </main>
-
 </body>
 </html>
