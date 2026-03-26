@@ -50,14 +50,10 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Flyway migrations -->
+        <!-- Flyway migrations (Spring Boot 3.2.x ships Flyway 9 — flyway-core is sufficient for PostgreSQL) -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
 
         <!-- Lombok -->
